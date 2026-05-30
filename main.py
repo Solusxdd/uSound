@@ -1,3 +1,5 @@
+import asyncio
+
 from dotenv import load_dotenv
 
 import yt_dlp
@@ -26,12 +28,43 @@ async def get_audio(url):
     ydl_opts = {
         'format': 'bestaudio',
         'quiet': True,
+        'extract_flat': 'in_playlist',
     }
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(url, download=False)
-        audio_url = info.get('url')
-        title = info.get('title')
-    return PCMVolumeTransformer(FFmpegPCMAudio(audio_url, **FFMPEG_OPTIONS), volume=0.05), title
+        if 'entries' not in info:
+            audio_url = info.get('url')
+            title = info.get('title')
+            return PCMVolumeTransformer(FFmpegPCMAudio(audio_url, **FFMPEG_OPTIONS), volume=0.05), title
+        else:
+            aboba = info['entries']
+            search_dict = {}
+            for item in info['entries']:
+                search_dict[item['title']] = [item['url'], item['thumbnails'][0]['url']]
+            # info = ydl.extract_info(info['entries'][0].get('url'), download=False)
+            # audio_url = info.get('url')
+            # title = info.get('title')
+            return search_dict
+
+
+class ButtonWithNumber(discord.ui.Button):
+    def __init__(self, label, number, callback_handler):
+        super().__init__(label=label, style=discord.ButtonStyle.blurple)
+        self.number = number
+        self.callback_handler = callback_handler
+
+    async def callback(self, interaction: discord.Interaction):
+        await self.callback_handler(interaction, self.number)
+
+button_pressed_event = asyncio.Event()
+selected_number = None
+
+async def handle_button_press(interaction, number):
+    global selected_number
+    selected_number = number
+    await interaction.response.defer()
+    await interaction.delete_original_response()
+    button_pressed_event.set()
 
 @bot.event
 async def on_ready():
@@ -52,14 +85,33 @@ async def _disconnect(ctx: commands.Context):
     await ctx.voice_client.disconnect()
 
 @bot.slash_command(name='play', guild_ids=[server_id])
-async def _play(ctx: commands.Context, url: str):
+async def _play(ctx: commands.Context, search: str):
     await ctx.defer(ephemeral=True)
 
-    audio, title = await get_audio(url)
+    if "yt" in search or "youtube" in search:
+        audio, title = await get_audio(search)
+    else:
+        search_dict = await get_audio(f"ytsearch4:{search}")
+        embeds = []
+        buttons = []
+        count = 1
+        result_dict = {}
+        for item in search_dict:
+            embeds.append(discord.Embed(title=f"{count}.{item}"))
+            buttons.append(ButtonWithNumber(label=f"{count}", number=count, callback_handler=handle_button_press))
+            result_dict[count] = search_dict[item][0]
+            count += 1
+        view = discord.ui.View()
+        for button in buttons:
+            view.add_item(button)
+        await ctx.respond(embeds=embeds, view=view, ephemeral=True, delete_after=30)
+        await button_pressed_event.wait()
+        audio, title = await get_audio(result_dict[selected_number])
+
     track_queue.append(audio)
 
     if ctx.voice_client is None:
-        await ctx.respond("Начинаю проигрывание", ephemeral=True, delete_after=5)
+        await ctx.respond(f"Начинаю проигрывание {title}", ephemeral=True, delete_after=5)
         await ctx.author.voice.channel.connect()
         ctx.voice_client.play(audio, after=lambda e: check_queue(ctx))
 
@@ -67,7 +119,7 @@ async def _play(ctx: commands.Context, url: str):
         await ctx.respond(f"Трек {title} добавлен в очередь", ephemeral=True, delete_after=5)
 
     else:
-        await ctx.respond("Начинаю проигрывание", ephemeral=True, delete_after=5)
+        await ctx.respond(f"Начинаю проигрывание {title}", ephemeral=True, delete_after=5)
         ctx.voice_client.play(audio, after=lambda e: check_queue(ctx))
 
 @bot.slash_command(name='pause', guild_ids=[server_id])
