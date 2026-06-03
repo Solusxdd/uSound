@@ -5,16 +5,14 @@ import os
 import yt_dlp
 
 import discord
-from discord.ext import commands
 from discord import FFmpegPCMAudio, PCMVolumeTransformer
 
 search_data = {}
 intents = discord.Intents.default()
 queues = {}
-intents.message_content = True
-bot = commands.Bot(command_prefix='!', intents=intents)
+bot = discord.Bot()
 load_dotenv()
-server_ids = os.getenv('DISCORD_SERVER_ID', default='NO_SERVER_ID').split(',')
+server_ids = os.getenv('DISCORD_SERVERS_ID', default='NO_SERVER_ID').split(',')
 TOKEN = os.getenv('DISCORD_TOKEN', default='NO_TOKEN')
 
 FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5','options': '-vn'}
@@ -68,14 +66,14 @@ async def on_ready():
     print(f'Logged in as {bot.user}')
 
 @bot.command(name='connect', guild_ids=server_ids)
-async def _connect(ctx: commands.Context):
+async def _connect(ctx):
     if ctx.author.voice is None:
         return await ctx.respond("❌ Никого нет в голосовом канале", ephemeral=True, delete_after=5)
     await ctx.respond("Подключился", ephemeral=True, delete_after=5)
     await ctx.author.voice.channel.connect()
 
 @bot.command(name='disconnect', guild_ids=server_ids)
-async def _disconnect(ctx: commands.Context):
+async def _disconnect(ctx):
     if ctx.voice_client is None:
         return await ctx.respond("❌ Я не подключен ни к какому голосовому каналу!", ephemeral=True, delete_after=5)
 
@@ -87,7 +85,7 @@ async def _disconnect(ctx: commands.Context):
     await ctx.voice_client.disconnect()
 
 @bot.command(name='play', guild_ids=server_ids)
-async def _play(ctx: commands.Context, search: str):
+async def _play(ctx, search: str):
     await ctx.defer(ephemeral=True)
 
     if not ctx.author.voice:
@@ -140,7 +138,7 @@ async def _play(ctx: commands.Context, search: str):
         ctx.voice_client.play(audio, after=lambda e: check_queue(ctx, guild_id))
 
 @bot.command(name='pause', guild_ids=server_ids)
-async def _pause(ctx: commands.Context):
+async def _pause(ctx):
     if ctx.voice_client is None:
         return await ctx.respond("❌ Я не подключен ни к какому голосовому каналу!", ephemeral=True, delete_after=5)
     if ctx.voice_client.is_playing():
@@ -148,7 +146,7 @@ async def _pause(ctx: commands.Context):
         ctx.voice_client.pause()
 
 @bot.command(name='resume', guild_ids=server_ids)
-async def _resume(ctx: commands.Context):
+async def _resume(ctx):
     if ctx.voice_client is None:
         return await ctx.respond("❌ Я не подключен ни к какому голосовому каналу!", ephemeral=True, delete_after=5)
     if ctx.voice_client.is_paused():
@@ -156,26 +154,26 @@ async def _resume(ctx: commands.Context):
         ctx.voice_client.resume()
 
 @bot.command(name='volume', guild_ids=server_ids)
-async def _volume(ctx:commands.Context, volume: int):
+async def _volume(ctx, volume: int):
     await ctx.respond(f"Громкость изменена на {volume}%", ephemeral=True, delete_after=5)
     ctx.voice_client.source.volume = volume / 100
 
 @bot.command(name='skip', guild_ids=server_ids)
-async def _skip(ctx: commands.Context):
+async def _skip(ctx):
     if ctx.voice_client is None:
         return await ctx.respond("❌ Я не подключен ни к какому голосовому каналу!", ephemeral=True, delete_after=5)
     await ctx.respond("⏭️ Трек пропущен", ephemeral=True, delete_after=5)
     ctx.voice_client.stop()
 
 @bot.command(name='clear', guild_ids=server_ids)
-async def _clear_queue(ctx: commands.Context):
+async def _clear_queue(ctx):
     guild_id = ctx.guild.id
     if guild_id in queues:
         queues[guild_id] = []
     await ctx.respond("🗑️ Очередь очищена", ephemeral=True, delete_after=5)
 
 @bot.command(name='stop', guild_ids=server_ids)
-async def _stop(ctx: commands.Context):
+async def _stop(ctx):
     guild_id = ctx.guild.id
 
     if ctx.voice_client is None:
