@@ -1,0 +1,21 @@
+[project]
+name = "uSound-bot"
+version = "0.1.0"
+description = "Disocrd bot for playing music"
+authors = [ { name = "Solus"} ]
+requires-python = ">=3.13"
+dependencies = [
+    "py-cord>=2.8.0",
+    "python-dotenv==1.2.1",
+    "yt-dlp==2026.3.17"
+]
+
+[build-system]
+requires = ["flit_core>=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.module]
+name = "uSound"
+
+[project.scripts]
+aboba = "uSound.uSound:main"
