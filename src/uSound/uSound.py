@@ -67,14 +67,14 @@ class ButtonWithNumber(discord.ui.Button):
 async def on_ready():
     print(f'Logged in as {bot.user}')
 
-@bot.slash_command(name='connect', guild_ids=server_ids)
+@bot.command(name='connect', guild_ids=server_ids)
 async def _connect(ctx: commands.Context):
     if ctx.author.voice is None:
         return await ctx.respond("❌ Никого нет в голосовом канале", ephemeral=True, delete_after=5)
     await ctx.respond("Подключился", ephemeral=True, delete_after=5)
     await ctx.author.voice.channel.connect()
 
-@bot.slash_command(name='disconnect', guild_ids=server_ids)
+@bot.command(name='disconnect', guild_ids=server_ids)
 async def _disconnect(ctx: commands.Context):
     if ctx.voice_client is None:
         return await ctx.respond("❌ Я не подключен ни к какому голосовому каналу!", ephemeral=True, delete_after=5)
@@ -86,7 +86,7 @@ async def _disconnect(ctx: commands.Context):
     await ctx.respond("Отключаюсь", ephemeral=True, delete_after=5)
     await ctx.voice_client.disconnect()
 
-@bot.slash_command(name='play', guild_ids=server_ids)
+@bot.command(name='play', guild_ids=server_ids)
 async def _play(ctx: commands.Context, search: str):
     await ctx.defer(ephemeral=True)
 
@@ -139,7 +139,7 @@ async def _play(ctx: commands.Context, search: str):
         await ctx.respond(f"▶️ Начинаю проигрывание {title}", ephemeral=True, delete_after=5)
         ctx.voice_client.play(audio, after=lambda e: check_queue(ctx, guild_id))
 
-@bot.slash_command(name='pause', guild_ids=server_ids)
+@bot.command(name='pause', guild_ids=server_ids)
 async def _pause(ctx: commands.Context):
     if ctx.voice_client is None:
         return await ctx.respond("❌ Я не подключен ни к какому голосовому каналу!", ephemeral=True, delete_after=5)
@@ -147,7 +147,7 @@ async def _pause(ctx: commands.Context):
         await ctx.respond("На паузе", ephemeral=True, delete_after=5)
         ctx.voice_client.pause()
 
-@bot.slash_command(name='resume', guild_ids=server_ids)
+@bot.command(name='resume', guild_ids=server_ids)
 async def _resume(ctx: commands.Context):
     if ctx.voice_client is None:
         return await ctx.respond("❌ Я не подключен ни к какому голосовому каналу!", ephemeral=True, delete_after=5)
@@ -155,26 +155,26 @@ async def _resume(ctx: commands.Context):
         await ctx.respond("Возобновлено", ephemeral=True, delete_after=5)
         ctx.voice_client.resume()
 
-@bot.slash_command(name='volume', guild_ids=server_ids)
+@bot.command(name='volume', guild_ids=server_ids)
 async def _volume(ctx:commands.Context, volume: int):
     await ctx.respond(f"Громкость изменена на {volume}%", ephemeral=True, delete_after=5)
     ctx.voice_client.source.volume = volume / 100
 
-@bot.slash_command(name='skip', guild_ids=server_ids)
+@bot.command(name='skip', guild_ids=server_ids)
 async def _skip(ctx: commands.Context):
     if ctx.voice_client is None:
         return await ctx.respond("❌ Я не подключен ни к какому голосовому каналу!", ephemeral=True, delete_after=5)
     await ctx.respond("⏭️ Трек пропущен", ephemeral=True, delete_after=5)
     ctx.voice_client.stop()
 
-@bot.slash_command(name='clear', guild_ids=server_ids)
+@bot.command(name='clear', guild_ids=server_ids)
 async def _clear_queue(ctx: commands.Context):
     guild_id = ctx.guild.id
     if guild_id in queues:
         queues[guild_id] = []
     await ctx.respond("🗑️ Очередь очищена", ephemeral=True, delete_after=5)
 
-@bot.slash_command(name='stop', guild_ids=server_ids)
+@bot.command(name='stop', guild_ids=server_ids)
 async def _stop(ctx: commands.Context):
     guild_id = ctx.guild.id
 
